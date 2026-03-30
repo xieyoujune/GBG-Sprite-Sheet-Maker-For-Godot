@@ -10,17 +10,15 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     
-    <!-- Tailwind CSS -->
+    <!-- 引入资源 -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- React & ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
     <style>
         body { 
-            background-color: #f3f4f6; /* Tailwind gray-100 */
+            background-color: #f3f4f6; 
             margin: 0; 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             overflow: hidden; 
@@ -28,7 +26,6 @@
             user-select: none;
         }
         
-        /* 亮色棋盘格背景 */
         .checkered-bg {
             background-image: 
                 linear-gradient(45deg, #e5e7eb 25%, transparent 25%), 
@@ -40,115 +37,81 @@
             background-color: #f9fafb; 
         }
 
-        /* GB Gen 风格滚动条 (适配亮色) */
         .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
         
+        /* 彻底隐藏滚动条，避免视觉干扰 */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* GB Gen 风格弹跳进入动画 */
         @keyframes popIn {
             from { opacity: 0; transform: scale(0.99); }
             to { opacity: 1; transform: scale(1); }
         }
-        .animate-pop-in {
-            animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
+        .animate-pop-in { animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
-        /* GB Gen 风格状态呼吸灯 (无阴影) */
         @keyframes fastBlink {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.4; }
         }
         .animate-fast-blink { animation: fastBlink 0.5s ease-in-out infinite; }
 
-        @keyframes pulseGreen {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+        /* 提醒抖动动画 */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
         }
-        .animate-pulse-green { animation: pulseGreen 2s ease-in-out infinite; }
+        .animate-shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
 
-        /* 扁平化滑块 */
         .custom-slider {
             -webkit-appearance: none;
             appearance: none;
             height: 4px;
             border-radius: 9999px;
             outline: none;
-            border: none;
-            margin: 0; 
             background: #e5e7eb;
         }
         .custom-slider::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 4px;
-            cursor: pointer;
-            background: transparent;
-            border: none;
-            border-radius: 9999px;
+            width: 100%; height: 4px; cursor: pointer; background: transparent; border: none; border-radius: 9999px;
         }
         .custom-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 12px; 
-            height: 12px;
-            border-radius: 50%;
-            background: #111827; 
-            cursor: pointer;
-            border: none;
-            margin-top: -4px; 
-            transition: transform 0.1s;
+            -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%;
+            background: #111827; cursor: pointer; border: none; margin-top: -5px; transition: transform 0.1s;
         }
-        .custom-slider::-webkit-slider-thumb:hover {
-            transform: scale(1.2);
-        }
+        .custom-slider::-webkit-slider-thumb:hover { transform: scale(1.2); }
 
-        /* 咖啡杯专属脉动渐变 */
         @keyframes coffee-pulse {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
         .btn-coffee-lab {
-            position: relative;
-            overflow: hidden;
-            z-index: 1;
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative; overflow: hidden; z-index: 1; transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .btn-coffee-lab::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
             background: linear-gradient(-45deg, #1677ff, #07c160, #1677ff, #07c160);
-            background-size: 400% 400%;
-            opacity: 0;
-            z-index: -1;
-            transition: opacity 0.6s ease;
+            background-size: 400% 400%; opacity: 0; z-index: -1; transition: opacity 0.6s ease;
         }
-        .btn-coffee-lab:hover::before {
-            opacity: 1;
-            animation: coffee-pulse 8s ease infinite;
-        }
-        .btn-coffee-lab:hover {
-            transform: scale(1.05);
-            color: white !important;
-        }
+        .btn-coffee-lab:hover::before { opacity: 1; animation: coffee-pulse 8s ease infinite; }
+        .btn-coffee-lab:hover { transform: scale(1.05); color: white !important; }
 
-        .picker-cursor {
-            cursor: crosshair !important;
-        }
+        .picker-cursor { cursor: crosshair !important; }
 
         .user-avatar {
-            width: 40px;
-            height: 40px;
-            object-fit: cover;
-            border-radius: 9999px;
-            flex-shrink: 0;
-            background-color: #e5e7eb;
+            width: 40px; height: 40px; object-fit: cover; border-radius: 9999px;
+            flex-shrink: 0; background-color: #e5e7eb;
         }
+
+        .btn-status-icon {
+            display: flex; align-items: center; justify-content: center;
+            padding: 8px; border-radius: 10px; transition: all 0.2s; color: #94a3b8;
+        }
+        .btn-status-icon:hover { background-color: #f1f5f9; color: #1e293b; }
+        .btn-status-icon.active { background-color: #1e293b; color: #ffffff; }
     </style>
 </head>
 <body>
@@ -159,83 +122,156 @@
 
         const Icons = {
             Upload: ({ size = 20 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
-            Download: ({ size = 20 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
+            Video: ({ size = 20 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>,
             Trash: ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>,
             Up: ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"/></svg>,
             Down: ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>,
             Pipette: ({ size = 18 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m2 22 1-1h3l9-9"/><path d="M3 21v-3l9-9"/><path d="m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.4.4a2.1 2.1 0 1 1-3 3l-3.8-3.8a2.1 2.1 0 1 1 3-3l.4.4Z"/></svg>,
-            Clear: ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>,
             Coffee: ({ size = 18 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="13" y1="1" x2="13" y2="4"/></svg>,
-            Close: ({ size = 24 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            Close: ({ size = 24 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+            Play: ({ size = 18 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>,
+            Pause: ({ size = 18 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>,
+            Mirror: ({ size = 20 }) => (
+                <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10 20L3 12L10 4V20Z" />
+                    <path d="M14 20L21 12L14 4V20Z" />
+                </svg>
+            )
         };
 
         const DefaultAvatar = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23111827'/%3E%3Ccircle cx='50' cy='40' r='20' fill='%23f3f4f6'/%3E%3Cpath d='M20 90 Q50 60 80 90' stroke='%23f3f4f6' stroke-width='10' fill='none'/%3E%3C/svg%3E";
 
         function App() {
             const [images, setImages] = useState([]);
-            const [settings, setSettings] = useState({
-                columns: 0,
-                padding: 0,
-                fps: 12,
-                tolerance: 10
-            });
+            const [settings, setSettings] = useState({ columns: 0, padding: 0, fps: 12, tolerance: 10, saturation: 100, hue: 0 });
             const [isDragging, setIsDragging] = useState(false);
             const [currentFrame, setCurrentFrame] = useState(0);
             const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
             
-            const [previewMode, setPreviewMode] = useState('anim'); // 默认改为 'anim'
+            const [previewMode, setPreviewMode] = useState('anim'); 
             const [transparentColor, setTransparentColor] = useState(null);
             const [isPickingColor, setIsPickingColor] = useState(false);
             const [userDisplayName, setUserDisplayName] = useState("@谢有君");
             const [showDonationModal, setShowDonationModal] = useState(false);
             
+            const [isPlaying, setIsPlaying] = useState(true);
+            const [isMirrored, setIsMirrored] = useState(false);
+            const [shouldShakePickBtn, setShouldShakePickBtn] = useState(false);
+
+            const [videoFile, setVideoFile] = useState(null);
+            const [videoDurationSetting, setVideoDurationSetting] = useState(5); 
+            const [isExtracting, setIsExtracting] = useState(false);
+
             const canvasRef = useRef(null);
             const fileInputRef = useRef(null);
+            const videoInputRef = useRef(null);
+
+            useEffect(() => {
+                const handleKeyDown = (e) => {
+                    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+                    if (e.code === 'Space') { e.preventDefault(); setIsPlaying(prev => !prev); }
+                };
+                window.addEventListener('keydown', handleKeyDown);
+                return () => window.removeEventListener('keydown', handleKeyDown);
+            }, []);
 
             const handleFiles = async (files) => {
                 const validFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
                 if (validFiles.length === 0) return;
-
+                setVideoFile(null);
+                setCurrentFrame(0);
                 const newImages = await Promise.all(validFiles.map(file => {
                     return new Promise(resolve => {
                         const reader = new FileReader();
                         reader.onload = (e) => {
                             const img = new Image();
-                            img.onload = () => {
-                                resolve({
-                                    id: Math.random().toString(36).substr(2, 9),
-                                    file, url: e.target.result, img,
-                                    width: img.width, height: img.height, name: file.name
-                                });
-                            };
+                            img.onload = () => resolve({
+                                id: Math.random().toString(36).substr(2, 9),
+                                file, url: e.target.result, img,
+                                width: img.width, height: img.height, name: file.name
+                            });
                             img.src = e.target.result;
                         };
                         reader.readAsDataURL(file);
                     });
                 }));
-
                 newImages.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true}));
-                setImages(prev => [...prev, ...newImages]);
+                setImages(newImages);
+            };
+
+            const extractFrames = async (file, dur) => {
+                setIsExtracting(true);
+                setCurrentFrame(0);
+                return new Promise((resolve) => {
+                    const video = document.createElement('video');
+                    video.src = URL.createObjectURL(file);
+                    video.muted = true; video.playsInline = true; video.preload = "auto";
+                    video.crossOrigin = "anonymous";
+                    const cleanup = () => { URL.revokeObjectURL(video.src); setIsExtracting(false); };
+                    video.onerror = () => { cleanup(); resolve([]); };
+                    
+                    video.onloadedmetadata = async () => {
+                        try {
+                            const canvas = document.createElement('canvas');
+                            canvas.width = video.videoWidth || 1; 
+                            canvas.height = video.videoHeight || 1;
+                            const ctx = canvas.getContext('2d');
+                            const frames = [];
+                            const frameCount = dur === 1 ? 5 : (dur === 10 ? 48 : 24);
+                            const videoDur = isNaN(video.duration) || video.duration === Infinity ? dur : video.duration;
+                            const targetTime = Math.min(videoDur, dur);
+                            const step = targetTime / frameCount;
+
+                            for (let i = 0; i < frameCount; i++) {
+                                video.currentTime = Math.min(i * step, videoDur);
+                                await new Promise((res) => {
+                                    const onS = () => { video.removeEventListener('seeked', onS); res(); };
+                                    video.addEventListener('seeked', onS);
+                                    setTimeout(onS, 1000); 
+                                });
+                                ctx.drawImage(video, 0, 0);
+                                const url = canvas.toDataURL('image/png');
+                                const img = new Image();
+                                await new Promise(r => { img.onload = r; img.src = url; });
+                                frames.push({ 
+                                    id: Math.random().toString(36).substr(2, 9), 
+                                    url, img, width: img.width, height: img.height, 
+                                    name: `v_frame_${(i+1).toString().padStart(3,'0')}.png` 
+                                });
+                            }
+                            cleanup(); resolve(frames);
+                        } catch (err) { cleanup(); resolve([]); }
+                    };
+                    video.load();
+                });
+            };
+
+            const handleVideo = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                setVideoFile(file); setTransparentColor(null);
+                const frames = await extractFrames(file, videoDurationSetting);
+                if (frames && frames.length > 0) setImages(frames);
+            };
+
+            const handleDurationChange = async (val) => {
+                if (isExtracting || !videoFile) return;
+                setVideoDurationSetting(val);
+                const frames = await extractFrames(videoFile, val);
+                if (frames && frames.length > 0) setImages(frames);
             };
 
             const onDragOver = (e) => { e.preventDefault(); setIsDragging(true); };
             const onDragLeave = (e) => { e.preventDefault(); setIsDragging(false); };
             const onDrop = (e) => {
                 e.preventDefault(); setIsDragging(false);
-                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) handleFiles(e.dataTransfer.files);
-            };
-
-            const removeImage = (id) => setImages(images.filter(img => img.id !== id));
-            const clearAll = () => { setImages([]); setTransparentColor(null); };
-            
-            const moveImage = (index, direction) => {
-                const newImages = [...images];
-                if (direction === 'up' && index > 0) {
-                    [newImages[index - 1], newImages[index]] = [newImages[index], newImages[index - 1]];
-                } else if (direction === 'down' && index < images.length - 1) {
-                    [newImages[index + 1], newImages[index]] = [newImages[index], newImages[index + 1]];
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    const file = e.dataTransfer.files[0];
+                    if (file.type.startsWith('video/')) {
+                        setVideoFile(file); setTransparentColor(null);
+                        extractFrames(file, videoDurationSetting).then(res => res && res.length && setImages(res));
+                    } else handleFiles(e.dataTransfer.files);
                 }
-                setImages(newImages);
             };
 
             const handleCanvasClick = (e) => {
@@ -246,400 +282,307 @@
                 const scaleY = canvas.height / rect.height;
                 const x = Math.floor((e.clientX - rect.left) * scaleX);
                 const y = Math.floor((e.clientY - rect.top) * scaleY);
-                
                 const ctx = canvas.getContext('2d');
                 const pixel = ctx.getImageData(x, y, 1, 1).data;
-                
                 if (pixel[3] > 0) setTransparentColor({ r: pixel[0], g: pixel[1], b: pixel[2] });
                 setIsPickingColor(false);
             };
 
-            // 核心绘制逻辑
-            const drawCore = (ctx, width, height, isSpriteSheet) => {
-                ctx.clearRect(0, 0, width, height);
+            const drawCore = (ctx, w, h, isSheet) => {
+                if (images.length === 0) return;
+                ctx.clearRect(0, 0, w, h); ctx.save();
+                
+                ctx.filter = `saturate(${settings.saturation}%) hue-rotate(${settings.hue}deg)`;
 
-                if (isSpriteSheet) {
-                    const maxWidth = Math.max(...images.map(i => i.width));
-                    const maxHeight = Math.max(...images.map(i => i.height));
-                    const total = images.length;
-                    let cols = settings.columns > 0 ? settings.columns : Math.ceil(Math.sqrt(total));
-                    if (cols > total) cols = total;
+                if (isMirrored) { ctx.translate(w, 0); ctx.scale(-1, 1); }
+                if (isSheet) {
+                    const validImages = images.filter(i => i && i.img);
+                    if (validImages.length === 0) return;
+                    const mw = Math.max(...validImages.map(i => i.width));
+                    const mh = Math.max(...validImages.map(i => i.height));
+                    let cols = settings.columns > 0 ? settings.columns : Math.ceil(Math.sqrt(validImages.length));
                     const pad = settings.padding;
-
-                    images.forEach((imgObj, index) => {
-                        const col = index % cols;
-                        const row = Math.floor(index / cols);
-                        const x = col * (maxWidth + pad);
-                        const y = row * (maxHeight + pad);
-                        const drawX = x + (maxWidth - imgObj.width) / 2;
-                        const drawY = y + (maxHeight - imgObj.height) / 2;
-                        ctx.drawImage(imgObj.img, drawX, drawY);
+                    validImages.forEach((imgObj, idx) => {
+                        const col = idx % cols; const row = Math.floor(idx / cols);
+                        ctx.drawImage(imgObj.img, col*(mw+pad) + (mw-imgObj.width)/2, row*(mh+pad) + (mh-imgObj.height)/2);
                     });
                 } else {
-                    if (images[currentFrame]) {
-                        ctx.drawImage(images[currentFrame].img, 0, 0);
-                    }
+                    const target = images[currentFrame] || images[0];
+                    if (target && target.img) ctx.drawImage(target.img, 0, 0);
                 }
+                ctx.restore();
 
                 if (transparentColor && !isPickingColor) {
-                    const imageData = ctx.getImageData(0, 0, width, height);
-                    const data = imageData.data;
-                    const { r, g, b } = transparentColor;
-                    const tol = settings.tolerance;
-                    for (let i = 0; i < data.length; i += 4) {
-                        if (Math.abs(data[i] - r) <= tol && Math.abs(data[i+1] - g) <= tol && Math.abs(data[i+2] - b) <= tol) {
-                            data[i+3] = 0; 
-                        }
-                    }
-                    ctx.putImageData(imageData, 0, 0);
+                    const idata = ctx.getImageData(0, 0, w, h);
+                    const d = idata.data; const {r,g,b} = transparentColor; const tol = settings.tolerance;
+                    for (let i=0; i<d.length; i+=4) if (Math.abs(d[i]-r)<=tol && Math.abs(d[i+1]-g)<=tol && Math.abs(d[i+2]-b)<=tol) d[i+3]=0;
+                    ctx.putImageData(idata, 0, 0);
                 }
             };
 
-            // 更新画布 (根据当前预览模式：雪碧图 或 动画)
             const updateCanvas = useCallback(() => {
-                if (!canvasRef.current || images.length === 0) {
-                    setCanvasSize({ width: 0, height: 0 });
-                    return;
+                if (!canvasRef.current || images.length === 0) { 
+                    if (canvasSize.width !== 0) setCanvasSize({ width: 0, height: 0 }); 
+                    return; 
                 }
                 const canvas = canvasRef.current;
-                const ctx = canvas.getContext('2d');
-                
+                const validImages = images.filter(i => i && i.img);
+                if (validImages.length === 0) return;
+
                 if (previewMode === 'sheet') {
-                    const maxWidth = Math.max(...images.map(i => i.width));
-                    const maxHeight = Math.max(...images.map(i => i.height));
-                    const total = images.length;
-                    let cols = settings.columns > 0 ? settings.columns : Math.ceil(Math.sqrt(total));
-                    if (cols > total) cols = total;
-                    const rows = Math.ceil(total / cols);
+                    const mw = Math.max(...validImages.map(i => i.width));
+                    const mh = Math.max(...validImages.map(i => i.height));
+                    let cols = settings.columns > 0 ? settings.columns : Math.ceil(Math.sqrt(validImages.length));
+                    const rows = Math.ceil(validImages.length / cols);
                     const pad = settings.padding;
+                    const w = cols * mw + (cols - 1) * pad;
+                    const h = Math.ceil(validImages.length / cols) * mh + (Math.ceil(validImages.length / cols) - 1) * pad;
                     
-                    const width = cols * maxWidth + (cols - 1) * pad;
-                    const height = rows * maxHeight + (rows - 1) * pad;
-                    
-                    if (canvas.width !== width || canvas.height !== height) {
-                        canvas.width = width; canvas.height = height;
-                        setCanvasSize({ width, height });
+                    if (canvas.width !== w || canvas.height !== h) {
+                        canvas.width = w; canvas.height = h;
+                        setCanvasSize({ width: w, height: h });
                     }
-                    drawCore(ctx, width, height, true);
+                    drawCore(canvas.getContext('2d'), w, h, true);
                 } else {
-                    const imgObj = images[currentFrame];
-                    if (!imgObj) return;
-                    
-                    if (canvas.width !== imgObj.width || canvas.height !== imgObj.height) {
-                        canvas.width = imgObj.width; canvas.height = imgObj.height;
-                        setCanvasSize({ width: imgObj.width, height: imgObj.height });
+                    const f = images[currentFrame] || images[0]; if (!f) return;
+                    if (canvas.width !== f.width || canvas.height !== f.height) {
+                        canvas.width = f.width; canvas.height = f.height;
+                        setCanvasSize({ width: f.width, height: f.height });
                     }
-                    drawCore(ctx, imgObj.width, imgObj.height, false);
+                    drawCore(canvas.getContext('2d'), f.width, f.height, false);
                 }
-            }, [images, settings, transparentColor, isPickingColor, previewMode, currentFrame]);
+            }, [images, settings, transparentColor, isPickingColor, previewMode, currentFrame, isMirrored]);
 
             useEffect(() => { updateCanvas(); }, [updateCanvas]);
 
-            // 动画帧循环
             useEffect(() => {
-                if (images.length === 0) { setCurrentFrame(0); return; }
-                const interval = setInterval(() => {
-                    setCurrentFrame(prev => (prev + 1) % images.length);
-                }, 1000 / settings.fps);
-                return () => clearInterval(interval);
-            }, [images.length, settings.fps]);
+                if (images.length <= 1 || !isPlaying) return;
+                const itv = setInterval(() => setCurrentFrame(p => (p + 1) % images.length), 1000 / settings.fps);
+                return () => clearInterval(itv);
+            }, [images.length, settings.fps, isPlaying]);
 
-            // 导出逻辑：脱离预览画布，强制在后台生成完整的雪碧图
             const download = () => {
                 if (images.length === 0) return;
-                
-                const tempCanvas = document.createElement('canvas');
-                const ctx = tempCanvas.getContext('2d');
-                
-                const maxWidth = Math.max(...images.map(i => i.width));
-                const maxHeight = Math.max(...images.map(i => i.height));
-                const total = images.length;
-                let cols = settings.columns > 0 ? settings.columns : Math.ceil(Math.sqrt(total));
-                if (cols > total) cols = total;
-                const rows = Math.ceil(total / cols);
+                const tmp = document.createElement('canvas');
+                const validImages = images.filter(i => i && i.img);
+                const mw = Math.max(...validImages.map(i => i.width));
+                const mh = Math.max(...validImages.map(i => i.height));
+                let cols = settings.columns > 0 ? settings.columns : Math.ceil(Math.sqrt(validImages.length));
                 const pad = settings.padding;
-                
-                const width = cols * maxWidth + (cols - 1) * pad;
-                const height = rows * maxHeight + (rows - 1) * pad;
-                
-                tempCanvas.width = width;
-                tempCanvas.height = height;
-                
-                drawCore(ctx, width, height, true);
-                
-                const link = document.createElement('a'); 
-                link.download = `sprite_sheet_${Date.now()}.png`;
-                link.href = tempCanvas.toDataURL('image/png'); 
-                link.click();
+                const w = cols * mw + (cols - 1) * pad;
+                const h = Math.ceil(validImages.length / cols) * (mh + pad);
+                tmp.width = w; tmp.height = h;
+                drawCore(tmp.getContext('2d'), w, h, true);
+                const a = document.createElement('a'); a.download=`sprite_${Date.now()}.png`; a.href=tmp.toDataURL('image/png'); a.click();
             };
 
-            // 完全扁平无边框的容器样式
-            const containerClass = "bg-white rounded-[28px] overflow-hidden";
-            const cardClass = "bg-gray-50 rounded-2xl p-5 flex flex-col";
+            const moveImage = (idx, dir) => {
+                const newI = [...images];
+                if (dir === 'up' && idx > 0) [newI[idx - 1], newI[idx]] = [newI[idx], newI[idx - 1]];
+                if (dir === 'down' && idx < images.length - 1) [newI[idx + 1], newI[idx]] = [newI[idx], newI[idx + 1]];
+                setImages(newI);
+            };
 
-            const CustomSlider = ({ label, value, min, max, onChange, suffix = '' }) => {
-                const pct = ((value - min) / (max - min)) * 100;
-                return (
-                    <div className="flex flex-col gap-2 text-left">
-                        {label && (
-                            <div className="flex justify-between items-center text-[10px] font-black text-gray-400 uppercase tracking-widest text-left">
-                                <span>{label}</span>
-                                <span className="font-mono text-gray-900">{value === 0 && !suffix ? 'AUTO' : `${value}${suffix}`}</span>
-                            </div>
-                        )}
-                        <input 
-                            type="range" min={min} max={max} value={value} 
-                            onChange={(e) => onChange(parseInt(e.target.value))}
-                            className="custom-slider w-full"
-                            style={{ background: `linear-gradient(to right, #111827 ${pct}%, #e5e7eb ${pct}%)` }}
-                        />
+            const clearAll = () => { setImages([]); setTransparentColor(null); setVideoFile(null); setCurrentFrame(0); };
+
+            const handleToleranceChange = (v) => {
+                if (!transparentColor) {
+                    setShouldShakePickBtn(true);
+                    setTimeout(() => setShouldShakePickBtn(false), 500);
+                    return;
+                }
+                setSettings({...settings, tolerance: v});
+            };
+
+            const Slider = ({ label, value, min, max, onChange, suffix = '' }) => (
+                <div className="flex flex-col gap-1.5">
+                    <div className="flex justify-between text-[11px] font-black text-gray-400 uppercase tracking-widest text-left">
+                        <span>{label}</span>
+                        <span className="text-gray-900 font-mono">{value===0 && !suffix ? 'AUTO' : `${value}${suffix}`}</span>
                     </div>
-                );
-            };
+                    <input type="range" min={min} max={max} value={value} onChange={e=>onChange(parseInt(e.target.value))} className="custom-slider w-full" style={{ background: `linear-gradient(to right, #111827 ${((value-min)/(max-min || 1))*100}%, #e5e7eb ${((value-min)/(max-min || 1))*100}%)` }} />
+                </div>
+            );
 
             return (
-                <div 
-                    className="h-[100dvh] flex flex-col items-center justify-center p-4 text-gray-900"
-                    style={{
-                        paddingTop: 'max(1rem, env(safe-area-inset-top))',
-                        paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))',
-                        paddingLeft: 'max(1rem, env(safe-area-inset-left))',
-                        paddingRight: 'max(1rem, env(safe-area-inset-right))'
-                    }}
-                >
-                    <input type="file" ref={fileInputRef} onChange={(e) => handleFiles(e.target.files)} accept="image/*" multiple className="hidden" />
+                <div className="h-[100dvh] flex flex-col items-center justify-center p-4 text-gray-900 bg-gray-100">
+                    <input type="file" ref={fileInputRef} onChange={e=>handleFiles(e.target.files)} accept="image/*" multiple className="hidden" />
+                    <input type="file" ref={videoInputRef} onChange={handleVideo} accept="video/*" className="hidden" />
 
                     {showDonationModal && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowDonationModal(false)}>
-                            <div className="bg-white rounded-[32px] p-10 max-w-2xl w-full relative flex flex-col items-center animate-pop-in" onClick={(e) => e.stopPropagation()}>
-                                <button onClick={() => setShowDonationModal(false)} className="absolute top-6 right-6 text-gray-400 hover:text-gray-900 p-2 hover:bg-gray-100 rounded-full transition-all"><Icons.Close size={24} /></button>
-                                <h2 className="text-2xl font-black text-gray-900 mb-2 mt-4 tracking-tight">请我喝杯咖啡 ☕️</h2>
-                                <p className="text-sm font-bold text-gray-400 mb-10 tracking-widest uppercase">如果这个工具对你有帮助，欢迎打赏支持独立开发</p>
-                                <div className="flex gap-8 w-full justify-center">
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={()=>setShowDonationModal(false)}>
+                            <div className="bg-white rounded-[32px] p-10 max-w-2xl w-full relative flex flex-col items-center animate-pop-in shadow-2xl" onClick={e=>e.stopPropagation()}>
+                                <button onClick={()=>setShowDonationModal(false)} className="absolute top-6 right-6 text-gray-400 hover:text-gray-900 p-2 rounded-full transition-all"><Icons.Close size={24}/></button>
+                                <h2 className="text-2xl font-black mb-2 mt-4 tracking-tight">请我喝杯咖啡 ☕️</h2>
+                                <p className="text-sm font-bold text-gray-400 mb-10 tracking-widest uppercase text-center">感谢支持独立开发</p>
+                                <div className="flex gap-8 w-full justify-center text-center">
                                     <div className="flex flex-col items-center bg-gray-50 p-5 rounded-3xl w-[240px]">
-                                        <div className="w-full aspect-square bg-white rounded-2xl overflow-hidden mb-4"><img src="others/wechatpay.jpg" alt="微信支付" className="w-full h-full object-cover" /></div>
-                                        <span className="text-sm font-black text-[#07c160] tracking-widest">微信支付</span>
+                                        <div className="w-full aspect-square bg-white rounded-2xl overflow-hidden mb-4 border border-gray-100"><img src="others/wechatpay.jpg" className="w-full h-full object-cover" alt="wechat" /></div>
+                                        <span className="text-sm font-black text-[#07c160] tracking-widest uppercase">微信支付</span>
                                     </div>
                                     <div className="flex flex-col items-center bg-gray-50 p-5 rounded-3xl w-[240px]">
-                                        <div className="w-full aspect-square bg-white rounded-2xl overflow-hidden mb-4"><img src="others/alipay.jpg" alt="支付宝" className="w-full h-full object-cover" /></div>
-                                        <span className="text-sm font-black text-[#1677ff] tracking-widest">支付宝</span>
+                                        <div className="w-full aspect-square bg-white rounded-2xl overflow-hidden mb-4 border border-gray-100"><img src="others/alipay.jpg" className="w-full h-full object-cover" alt="alipay" /></div>
+                                        <span className="text-sm font-black text-[#1677ff] tracking-widest uppercase">支付宝</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    <div className="w-[95vw] max-w-[1400px] flex flex-col gap-5 h-full max-h-[850px] animate-pop-in">
-                        
-                        {/* 顶栏 */}
-                        <div className={`${containerClass} p-4 flex items-center justify-between gap-6 flex-shrink-0 z-20`}>
+                    <div className="w-[95vw] max-w-[1400px] flex flex-col gap-4 h-full max-h-[900px] animate-pop-in">
+                        <header className="bg-white rounded-[28px] p-3 px-6 flex items-center justify-between z-20 shadow-sm shrink-0">
                             <div className="flex items-center gap-5 text-left">
-                                <img src="others/xieyoujune.jpg" alt="Avatar" className="user-avatar" onError={(e) => { e.target.onerror = null; e.target.src = DefaultAvatar; }} />
+                                <img src="others/xieyoujune.jpg" alt="Avatar" className="user-avatar shadow-sm" onError={e=>e.target.src=DefaultAvatar} />
                                 <div className="flex flex-col text-left">
-                                    <span className="text-xl font-black text-gray-900 leading-none tracking-tight transition-all duration-200">{userDisplayName}</span>
-                                    <div className="flex items-center gap-2 mt-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                                        <a href="https://music.163.com/#/artist?id=1184020" target="_blank" rel="noopener noreferrer" className="hover:text-green-500 transition-colors cursor-pointer" onMouseEnter={() => setUserDisplayName("看看我的音乐项目")} onMouseLeave={() => setUserDisplayName("@谢有君")}>独立音乐人</a>
-                                        <span className="text-gray-300">/</span>
-                                        <a href="https://www.xiaohongshu.com/user/profile/63cac1130000000026006f9a" target="_blank" rel="noopener noreferrer" className="hover:text-green-500 transition-colors cursor-pointer" onMouseEnter={() => setUserDisplayName("看看我的游戏项目")} onMouseLeave={() => setUserDisplayName("@谢有君")}>《人生之旅》游戏开发者</a>
+                                    <span className="text-xl font-black tracking-tight leading-none">{userDisplayName}</span>
+                                    <div className="flex items-center gap-2 mt-2 text-[10px] font-bold uppercase tracking-widest text-gray-400 leading-none">
+                                        <span className="hover:text-green-500 cursor-pointer transition-colors" onMouseEnter={()=>setUserDisplayName("看看我的音乐项目")} onMouseLeave={()=>setUserDisplayName("@谢有君")}>独立音乐人</span>
+                                        <span className="text-gray-200">/</span>
+                                        <span className="hover:text-green-500 cursor-pointer transition-colors" onMouseEnter={()=>setUserDisplayName("看看我的游戏项目")} onMouseLeave={()=>setUserDisplayName("@谢有君")}>开发者</span>
                                     </div>
                                 </div>
-                                <div className="h-10 w-[1px] bg-gray-100 mx-2"></div>
+                                <div className="h-10 w-px bg-gray-100 mx-2" />
                                 <div className="flex flex-col text-left">
-                                    <h1 className="text-xl font-black text-gray-900 leading-none tracking-tight">GBG 精灵图实验室</h1>
-                                    <p className="text-[10px] font-bold text-gray-400 mt-1.5 uppercase tracking-widest">Sprite Sheet Lab</p>
+                                    <h1 className="text-xl font-black tracking-tight text-gray-900 leading-none">GBG 精灵图实验室</h1>
+                                    <p className="text-[10px] font-bold text-gray-400 tracking-widest uppercase mt-1 leading-none">Sprite Sheet Maker</p>
                                 </div>
                             </div>
                             <div className="flex gap-2">
-                                <button onClick={() => fileInputRef.current?.click()} className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl flex items-center gap-2 transition-all text-sm font-black uppercase tracking-widest">
-                                    <Icons.Upload size={16} /> 上传
-                                </button>
-                                <button onClick={download} disabled={images.length === 0} className="px-5 py-2.5 bg-gray-900 hover:bg-black text-white rounded-xl flex items-center gap-2 transition-all disabled:opacity-30 text-sm font-black uppercase tracking-widest min-w-[110px] justify-center active:scale-95">
-                                    <Icons.Download size={16} /> 导出
-                                </button>
-                                <button 
-                                    onClick={() => setShowDonationModal(true)} 
-                                    className="px-4 py-2.5 bg-gray-100 text-gray-800 rounded-xl flex items-center btn-coffee-lab"
-                                >
-                                    <Icons.Coffee size={18} />
-                                </button>
+                                <button onClick={()=>fileInputRef.current.click()} className="px-5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl text-sm font-black uppercase tracking-widest transition-all">上传</button>
+                                <button onClick={download} disabled={images.length===0} className="px-5 py-2 bg-gray-900 hover:bg-black text-white rounded-xl text-sm font-black uppercase tracking-widest transition-all active:scale-95 disabled:opacity-30">导出</button>
+                                <button onClick={()=>setShowDonationModal(true)} className="px-4 py-2 bg-gray-100 text-gray-800 rounded-xl btn-coffee-lab transition-all shadow-sm"><Icons.Coffee /></button>
                             </div>
-                        </div>
+                        </header>
 
-                        {/* 主内容区 (三栏布局) */}
-                        <div className="flex gap-5 items-stretch justify-center flex-1 min-h-0">
-                            
-                            {/* 左侧控制台: 参数设置 */}
-                            <div className={`w-[320px] xl:w-[350px] flex-shrink-0 ${containerClass} p-4 flex flex-col justify-start gap-4 overflow-hidden`}>
+                        <main className="flex gap-4 flex-1 min-h-0">
+                            {/* 左侧控制栏：严格还原大白底与内部灰块的背景层级关系 */}
+                            <aside className="w-[320px] bg-white rounded-[28px] p-4 flex flex-col gap-3 overflow-hidden shadow-sm shrink-0">
                                 
-                                {/* 上传拖拽区 (完全扁平) */}
-                                <div 
-                                    className={`bg-gray-50 rounded-2xl p-6 flex flex-col justify-center items-center text-center cursor-pointer transition-all flex-shrink-0 ${isDragging ? 'bg-gray-100 scale-[1.02]' : 'hover:bg-gray-100'}`}
-                                    onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}
-                                    onClick={() => fileInputRef.current?.click()}
-                                    style={{ minHeight: '120px' }}
-                                >
-                                    <div className="text-gray-400 mb-2"><Icons.Upload size={24} /></div>
-                                    <p className="text-sm font-black text-gray-700 tracking-wide">点击或拖拽图片</p>
-                                    <p className="text-[10px] font-bold text-gray-400 mt-1.5 uppercase tracking-widest">支持多张 PNG, JPG</p>
+                                {/* 1. 视图切换 */}
+                                <div className="flex bg-gray-50 p-1.5 rounded-[18px] shrink-0">
+                                    <button onClick={()=>setPreviewMode('anim')} className={`flex-1 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-xl transition-all ${previewMode==='anim'?'bg-white text-gray-900 shadow-sm':'text-gray-400 hover:text-gray-600'}`}>动画 / Anim</button>
+                                    <button onClick={()=>setPreviewMode('sheet')} className={`flex-1 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-xl transition-all ${previewMode==='sheet'?'bg-white text-gray-900 shadow-sm':'text-gray-400 hover:text-gray-600'}`}>雪碧图 / Sheet</button>
                                 </div>
                                 
-                                {/* 视图切换器 (GB Gen 风格 Toggle 开关) */}
-                                <div className="flex bg-gray-50 p-1.5 rounded-2xl flex-shrink-0">
-                                    <button onClick={() => setPreviewMode('anim')} className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${previewMode === 'anim' ? 'bg-white text-gray-900 shadow-[0_2px_10px_rgba(0,0,0,0.06)]' : 'text-gray-400 hover:text-gray-600'}`}>
-                                        动画 / Anim
-                                    </button>
-                                    <button onClick={() => setPreviewMode('sheet')} className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${previewMode === 'sheet' ? 'bg-white text-gray-900 shadow-[0_2px_10px_rgba(0,0,0,0.06)]' : 'text-gray-400 hover:text-gray-600'}`}>
-                                        雪碧图 / Sheet
-                                    </button>
+                                {/* 2. 上传图片 */}
+                                <div className={`bg-gray-50 rounded-[20px] p-6 flex flex-col items-center justify-center cursor-pointer transition-all shrink-0 ${isDragging?'bg-gray-100 scale-[1.02]':'hover:bg-gray-100'}`} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop} onClick={()=>fileInputRef.current.click()}>
+                                    <Icons.Upload size={24} className="text-gray-800" />
+                                    <p className="text-[12px] font-black mt-3 text-gray-700 tracking-wide">点击或拖拽图片</p>
                                 </div>
-
-                                {/* 布局及全局参数 */}
-                                <div className={`${cardClass} flex-1 overflow-y-auto custom-scrollbar justify-start gap-6`}>
+                                
+                                {/* 3. 导入视频 */}
+                                <button onClick={()=>videoInputRef.current?.click()} className="bg-gray-50 hover:bg-gray-100 py-3.5 rounded-[20px] flex items-center justify-center gap-2 text-[12px] font-black uppercase tracking-widest transition-all text-gray-600 shrink-0">
+                                    <Icons.Video size={18} /> 导入视频 / Video
+                                </button>
+                                
+                                {/* 4. 参数设置面板：整合到同一个灰底容器 */}
+                                <div className="flex-1 bg-gray-50 rounded-[20px] p-5 overflow-y-auto no-scrollbar flex flex-col text-left gap-4">
                                     
-                                    <CustomSlider label="排版列数 / Columns" value={settings.columns} min={0} max={Math.max(10, images.length)} onChange={(v) => setSettings({...settings, columns: v})} />
-                                    <CustomSlider label="切片间距 / Padding" value={settings.padding} min={0} max={50} suffix="PX" onChange={(v) => setSettings({...settings, padding: v})} />
-                                    <CustomSlider label="播放速度 / FPS" value={settings.fps} min={1} max={60} suffix=" FPS" onChange={(v) => setSettings({...settings, fps: v})} />
-                                    
-                                    {/* 吸管抠图 */}
+                                    {/* 4.1 滑块组 */}
                                     <div className="flex flex-col gap-4">
-                                        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-left">透明抠图 / Transparency</div>
-                                        
-                                        <button
-                                            onClick={() => setIsPickingColor(!isPickingColor)}
-                                            className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-[11px] uppercase tracking-widest font-black transition-all ${isPickingColor ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                                        <Slider label="排版列数 / Columns" value={settings.columns} min={0} max={Math.max(10,images.length)} onChange={v=>setSettings({...settings, columns:v})} />
+                                        <Slider label="切片间距 / Padding" value={settings.padding} min={0} max={50} onChange={v=>setSettings({...settings, padding:v})} suffix="PX" />
+                                        <Slider label="播放速度 / FPS" value={settings.fps} min={1} max={60} onChange={v=>setSettings({...settings, fps:v})} suffix="FPS" />
+                                        <Slider label="饱和度 / Saturation" value={settings.saturation} min={0} max={200} onChange={v=>setSettings({...settings, saturation:v})} suffix="%" />
+                                        <Slider label="色相 / Hue" value={settings.hue} min={0} max={360} onChange={v=>setSettings({...settings, hue:v})} suffix="°" />
+                                    </div>
+                                    
+                                    {/* 4.2 视频提取快捷选项 */}
+                                    {videoFile && (
+                                        <div className="flex flex-col gap-2 pt-2 shrink-0">
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-left">视频提取 / Extraction</p>
+                                            <div className="flex bg-gray-200/50 p-1 rounded-xl gap-1">
+                                                {[1,5,10].map(v=>(
+                                                    <button key={v} onClick={()=>handleDurationChange(v)} disabled={isExtracting} className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${videoDurationSetting===v?'bg-white text-gray-900 shadow-sm':'text-gray-500 hover:text-gray-700'}`}>{v}S</button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="w-full h-px bg-gray-200/60 my-1 shrink-0"></div>
+
+                                    {/* 4.3 抠图功能 */}
+                                    <div className="flex flex-col gap-3 shrink-0 text-left">
+                                        <div className="flex justify-between items-center">
+                                            <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">透明抠图 / Transparency</p>
+                                            {transparentColor && (
+                                                <button onClick={()=>setTransparentColor(null)} className="text-[10px] font-black text-red-500 uppercase hover:underline leading-none">清除</button>
+                                            )}
+                                        </div>
+                                        <button 
+                                            onClick={()=>setIsPickingColor(!isPickingColor)} 
+                                            className={`w-full py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${shouldShakePickBtn ? 'animate-shake text-red-500 bg-red-50' : (isPickingColor?'bg-gray-900 text-white shadow-md':'bg-gray-200/60 text-gray-700 hover:bg-gray-200')}`}
                                         >
-                                            <Icons.Pipette />
+                                            <Icons.Pipette size={16}/>
                                             {isPickingColor ? '请在中间画板取色' : '吸取背景色'}
                                         </button>
                                         
                                         {transparentColor && (
-                                            <div className="flex flex-col gap-4 animate-pop-in mt-1">
-                                                <div className="flex items-center justify-between bg-white p-2.5 rounded-xl">
-                                                    <div className="flex items-center gap-3 text-xs font-mono font-bold text-gray-600">
-                                                        <div className="w-6 h-6 rounded-md" style={{ backgroundColor: `rgb(${transparentColor.r}, ${transparentColor.g}, ${transparentColor.b})` }}></div>
-                                                        RGB {transparentColor.r},{transparentColor.g},{transparentColor.b}
-                                                    </div>
-                                                    <button onClick={() => setTransparentColor(null)} className="text-gray-400 hover:text-red-500 bg-gray-50 hover:bg-gray-100 p-1.5 rounded-lg transition-colors">
-                                                        <Icons.Trash />
-                                                    </button>
-                                                </div>
-                                                <CustomSlider label="容差 / Tolerance" value={settings.tolerance} min={0} max={150} onChange={(v) => setSettings({...settings, tolerance: v})} />
+                                            <div className="animate-pop-in">
+                                                <Slider label="容差 / Tolerance" value={settings.tolerance} min={0} max={150} onChange={handleToleranceChange} />
                                             </div>
                                         )}
                                     </div>
                                 </div>
-                            </div>
+                            </aside>
 
-                            {/* 中间工作区: 实时画布 */}
-                            <div className={`flex-1 ${containerClass} flex flex-col relative`}>
-                                
-                                {/* 顶部状态条 */}
-                                <div className="h-14 flex items-center justify-between px-6 shrink-0 z-20 bg-white">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-2 h-2 rounded-full ${images.length === 0 ? 'bg-gray-200' : (isPickingColor ? 'bg-yellow-400 animate-pulse' : 'bg-red-500 animate-fast-blink')}`}></div>
-                                        <div className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em] leading-none text-left">
-                                            {isPickingColor ? 'PICKING COLOR...' : '显示输出 / Live Output'}
-                                        </div>
+                            <div className="flex-1 bg-white rounded-[28px] relative flex flex-col overflow-hidden shadow-sm">
+                                <div className="h-14 flex items-center px-6 shrink-0 bg-white">
+                                    <div className="flex items-center gap-3 text-left">
+                                        <div className={`w-1.5 h-1.5 rounded-full ${images.length===0?'bg-gray-200':(isPickingColor?'bg-yellow-400 animate-pulse':'bg-red-500 animate-fast-blink')}`} />
+                                        <span className="text-[11px] text-gray-400 font-black uppercase tracking-[0.2em] leading-none mt-0.5">显示输出 / Live Output</span>
                                     </div>
-                                    
-                                    {isPickingColor && (
-                                        <div className="text-[10px] text-yellow-500 font-black uppercase tracking-[0.2em] animate-pulse">
-                                            PICKING COLOR...
-                                        </div>
-                                    )}
                                 </div>
-
-                                {/* 画布核心 */}
-                                <div className="flex-1 w-full min-h-0 flex flex-col items-center justify-center relative z-10 text-left checkered-bg overflow-auto p-8">
-                                    {images.length === 0 ? (
-                                        <div className="w-full h-full flex flex-col items-center justify-center cursor-pointer group text-center" onClick={() => fileInputRef.current?.click()}>
-                                            <div className="relative inline-block transition-transform group-hover:scale-105 duration-500">
-                                                <p className="text-[22px] font-black text-gray-300 tracking-wide leading-none mb-[14px]">工作区为空</p>
-                                                <div className="flex justify-between text-[13px] font-black text-gray-400 uppercase tracking-widest text-left">
-                                                    请在左侧导入图片
-                                                </div>
-                                            </div>
+                                <div className="flex-1 checkered-bg overflow-auto p-8 flex items-center justify-center relative border-y border-gray-50">
+                                    {isExtracting && <div className="absolute inset-0 bg-white/70 backdrop-blur-md flex flex-col items-center justify-center z-50 animate-pop-in"><div className="w-8 h-8 border-4 border-gray-200 border-t-black rounded-full animate-spin mb-4" /><p className="text-[11px] font-black tracking-widest text-gray-900 uppercase animate-pulse">正在提取视频序列帧...</p></div>}
+                                    {images.length===0 ? (
+                                        <div onClick={()=>fileInputRef.current.click()} className="cursor-pointer group flex flex-col items-center">
+                                            <p className="text-2xl font-black text-gray-300 group-hover:text-gray-400 transition-colors tracking-tight text-center leading-none">工作区为空 / Empty</p>
+                                            <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.1em] mt-3 text-center">请在左侧导入文件</p>
                                         </div>
                                     ) : (
-                                        <div className="flex items-center justify-center w-full h-full animate-pop-in relative min-h-0">
-                                            <canvas 
-                                                ref={canvasRef} 
-                                                onClick={handleCanvasClick}
-                                                className={`max-w-full max-h-full object-contain bg-transparent transition-transform duration-300 ${isPickingColor ? 'picker-cursor scale-[1.02] rounded-md' : ''}`} 
-                                            />
-                                        </div>
+                                        <canvas ref={canvasRef} onClick={handleCanvasClick} className={`max-w-full max-h-full object-contain transition-all duration-300 ${isPickingColor?'picker-cursor scale-[1.02] rounded-md':''}`} />
                                     )}
                                 </div>
-
-                                {/* 底部状态栏 */}
-                                <div className="h-14 flex items-center px-6 shrink-0 z-20 bg-white pointer-events-none text-left">
-                                    {images.length > 0 && (
-                                        <div className="w-full flex justify-between items-center opacity-70 transition-opacity duration-500">
-                                            <div className="flex flex-col gap-1 text-left">
-                                                <div className="text-[8px] font-black text-gray-400 uppercase tracking-widest text-left">系统状态 / Status</div>
-                                                <div className="text-[10px] font-bold text-gray-600 uppercase tracking-[0.1em]">Signal: Nominal</div>
-                                            </div>
-                                            <div className="text-right flex flex-col gap-1 text-left">
-                                                <div className="text-[8px] font-black text-gray-400 uppercase tracking-widest text-right">
-                                                    {previewMode === 'anim' ? '动画帧数 / Frame Info' : '画布信息 / Canvas'}
-                                                </div>
-                                                <div className="text-[10px] font-mono font-bold text-gray-600 uppercase tracking-[0.1em] text-right">
-                                                    {previewMode === 'anim' ? `FRAME: ${currentFrame + 1} / ${images.length} | W:${canvasSize.width} H:${canvasSize.height}` : `W:${canvasSize.width} H:${canvasSize.height}`}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* 右侧资源栏: 纯帧序列列表 */}
-                            <div className={`w-[320px] xl:w-[350px] flex-shrink-0 ${containerClass} p-4 flex flex-col justify-start overflow-hidden`}>
-                                
-                                <div className={`${cardClass} flex-1 overflow-hidden flex flex-col`}>
-                                    <div className="flex justify-between items-center mb-4">
-                                        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">帧序列 / Frames ({images.length})</div>
-                                        {images.length > 0 && (
-                                            <button onClick={clearAll} className="text-[10px] font-black text-red-500 uppercase tracking-widest hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
-                                                <Icons.Clear /> 清空
-                                            </button>
-                                        )}
-                                    </div>
+                                <footer className="h-16 relative flex items-center justify-between px-6 bg-white opacity-90 shrink-0">
+                                    <div className="flex flex-col text-left"><span className="text-[9px] font-black uppercase text-gray-400 tracking-widest">系统状态 / Status</span><span className="text-[11px] font-black tracking-wider text-gray-600 leading-none mt-1">SIGNAL: NOMINAL</span></div>
                                     
-                                    <div className="flex-1 overflow-y-auto custom-scrollbar -mx-2 px-2 space-y-2">
-                                        {images.length === 0 ? (
-                                            <div className="text-center text-gray-300 text-[10px] font-black uppercase tracking-widest mt-8 bg-gray-100 p-4 rounded-xl">
-                                                EMPTY SEQUENCE
-                                            </div>
-                                        ) : (
-                                            images.map((img, index) => (
-                                                <div key={img.id} className={`group flex items-center gap-3 p-2 rounded-xl transition-all ${currentFrame === index && previewMode === 'anim' ? 'bg-gray-200' : 'bg-white hover:bg-gray-100'}`}>
-                                                    <div className="w-10 h-10 rounded-lg checkered-bg overflow-hidden flex-shrink-0 bg-white flex items-center justify-center">
-                                                        <img src={img.url} className="max-w-full max-h-full object-contain" alt="frame" />
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="text-xs font-black text-gray-800 truncate" title={img.name}>{img.name}</div>
-                                                        <div className="text-[9px] text-gray-400 font-mono font-bold mt-0.5">{img.width} × {img.height}</div>
-                                                    </div>
-                                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <div className="flex flex-col gap-1">
-                                                            <button onClick={() => moveImage(index, 'up')} disabled={index === 0} className="bg-white hover:bg-gray-300 text-gray-500 rounded-md p-1 disabled:opacity-30 transition-colors"><Icons.Up /></button>
-                                                            <button onClick={() => moveImage(index, 'down')} disabled={index === images.length - 1} className="bg-white hover:bg-gray-300 text-gray-500 rounded-md p-1 disabled:opacity-30 transition-colors"><Icons.Down /></button>
-                                                        </div>
-                                                        <button onClick={() => removeImage(img.id)} className="text-gray-400 hover:text-red-500 bg-white hover:bg-red-50 p-2 rounded-lg transition-colors ml-1"><Icons.Trash /></button>
-                                                    </div>
+                                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-1 bg-gray-50 px-4 py-2 rounded-2xl pointer-events-auto">
+                                        <button className={`btn-status-icon ${isPlaying ? 'active' : ''}`} onClick={() => setIsPlaying(true)} title="播放"><Icons.Play size={18} /></button>
+                                        <button className={`btn-status-icon ${!isPlaying ? 'active' : ''}`} onClick={() => setIsPlaying(false)} title="暂停"><Icons.Pause size={18} /></button>
+                                        <div className="w-px h-5 bg-gray-200 mx-2" />
+                                        <button className={`btn-status-icon ${isMirrored ? 'active' : ''}`} onClick={() => setIsMirrored(!isMirrored)} title="镜像翻转"><Icons.Mirror size={22} /></button>
+                                    </div>
+
+                                    <div className="text-right flex flex-col text-right"><span className="text-[9px] font-black uppercase text-gray-400 tracking-widest">{previewMode==='anim'?'当前帧数 / Anim Info':'画布规格 / Canvas Info'}</span><span className="text-[11px] font-mono font-black uppercase text-gray-600 leading-none mt-1">{previewMode==='anim' ? `F:${currentFrame+1}/${images.length}` : `W:${canvasSize.width} H:${canvasSize.height}`}</span></div>
+                                </footer>
+                            </div>
+
+                            <aside className="w-[320px] bg-white rounded-[28px] p-4 flex flex-col overflow-hidden shadow-sm shrink-0">
+                                <div className="bg-gray-50 rounded-[20px] p-5 flex-1 flex flex-col overflow-hidden text-left">
+                                    <div className="flex justify-between items-center mb-4 text-left">
+                                        <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest leading-none">帧序列 / Sequence ({images.length})</p>
+                                        {images.length>0 && <button onClick={clearAll} className="text-[11px] font-black text-red-500 hover:underline transition-all">清空</button>}
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto custom-scrollbar -mx-2 px-2 space-y-2 text-left">
+                                        {images.length===0 ? <div className="text-center text-gray-300 text-[11px] font-black uppercase mt-12 py-8 border-2 border-dashed border-gray-100 rounded-2xl">EMPTY LIST</div> : images.map((img, idx)=>(
+                                            <div key={img.id} className={`group flex items-center gap-3 p-2 rounded-2xl border-2 transition-all duration-200 ${currentFrame===idx&&previewMode==='anim'?'border-gray-900 bg-white shadow-sm':'border-transparent bg-white/50 hover:bg-white'}`}>
+                                                <div className="w-12 h-12 rounded-xl checkered-bg flex items-center justify-center overflow-hidden shrink-0 border border-gray-100"><img src={img.url} className="max-w-full max-h-full object-contain" alt="thumb" /></div>
+                                                <div className="flex-1 min-w-0 text-left text-left"><p className="text-[11px] font-black text-gray-800 truncate" title={img.name}>{img.name}</p><p className="text-[10px] text-gray-400 font-mono font-bold mt-1 uppercase">{img.width}x{img.height}</p></div>
+                                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <div className="flex flex-col"><button onClick={()=>moveImage(idx,'up')} disabled={idx===0} className="hover:bg-gray-100 p-1 rounded-lg text-gray-400 hover:text-gray-900 disabled:opacity-20 transition-colors"><Icons.Up /></button><button onClick={()=>moveImage(idx,'down')} disabled={idx===images.length-1} className="hover:bg-gray-100 p-1 rounded-lg text-gray-400 hover:text-gray-900 disabled:opacity-20 transition-colors"><Icons.Down /></button></div>
+                                                    <button onClick={()=>removeImage(img.id)} className="text-gray-400 hover:text-red-500 p-2.5 hover:bg-red-50 rounded-xl transition-all ml-1"><Icons.Trash /></button>
                                                 </div>
-                                            ))
-                                        )}
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-
+                            </aside>
+                        </main>
                     </div>
                 </div>
             );
         }
-
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
