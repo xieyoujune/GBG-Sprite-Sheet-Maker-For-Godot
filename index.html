@@ -135,7 +135,7 @@
 
         function App() {
             const [images, setImages] = useState([]);
-            const [settings, setSettings] = useState({ columns: 0, padding: 0, fps: 12, tolerance: 10, saturation: 100, hue: 0 });
+            const [settings, setSettings] = useState({ columns: 4, padding: 0, fps: 12, tolerance: 10, saturation: 100, hue: 0 });
             const [isDragging, setIsDragging] = useState(false);
             const [currentFrame, setCurrentFrame] = useState(0);
             const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
@@ -153,9 +153,12 @@
             const [videoFile, setVideoFile] = useState(null);
             const [isExtracting, setIsExtracting] = useState(false);
             const [videoDurationSetting, setVideoDurationSetting] = useState(5); 
-            const [importSource, setImportSource] = useState('image'); // 'image', 'video', 'spritesheet'
-            
-            const [originalSpriteSheet, setOriginalSpriteSheet] = useState(null);
+            const [importSource, setImportSource] = useState('image'); 
+
+            // 切片预览模态框状态
+            const [showSpriteModal, setShowSpriteModal] = useState(false);
+            const [spriteGrid, setSpriteGrid] = useState({ rows: 1, cols: 4 });
+            const [tempSpriteImage, setTempSpriteImage] = useState(null);
 
             const canvasRef = useRef(null);
             const fileInputRef = useRef(null);
@@ -198,8 +201,8 @@
             const handleDownloadUIRules = () => {
                 const uiRules = {
                     name: "GBG-UI-Genesis-Rules-Pro-Final",
-                    version: "19.0",
-                    description: "GBG 视觉宇宙最高规范。规定了绝对扁平化、无阴影、大圆角、雪碧图导出纯净透明无损 GIF 的核心逻辑，以及开发者菜单隐藏交互的实现。",
+                    version: "24.0",
+                    description: "GBG 视觉宇宙最高规范。规定了绝对扁平化、无阴影、大圆角、手动网格切割以及导出100%纯净透明无背景 GIF 的像素级篡改法则。",
                     designPhilosophy: {
                         style: "Absolute Flat Design (No borders, No shadows). 严禁使用任何 Tailwind 的 shadow 和 border 属性类。",
                         visualLayers: "依靠纯净的背景色差区分功能区 (bg-white, bg-gray-50, bg-gray-100)。",
@@ -218,7 +221,13 @@
                         }
                     },
                     functionalLogic: {
-                        exportLogic: "【硬性规定】无论导入何种格式，凡是导入[雪碧图]工作流，必须且只能使用 gif.js 导出 [纯净透明、单帧原尺寸、不压缩质量] 的 GIF。不可导出视频。渲染方法：使用 quality:10 实现极速渲染，transparent: 0x00FF00 数字形式定义透明抠像。为了防毛边边缘发黑，需将低于 Alpha 128 的像素强制置为透明绿 #00ff00，其余全不透明。"
+                        importSpritesheet: "弹窗让用户手动输入行数和列数进行精确切割。必须在原图上叠加根据用户输入实时生成的极限绿(#00ff00)网格辅助线，做到所见即所得。弹窗符合全系无边框无阴影设计。",
+                        exportLogic: "【硬性规定】导出 GIF 必须解决绿色背景和边缘黑圈问题！渲染法则：画布绝对不能提前铺设绿幕，必须保持透明。画上图片后，遍历每个像素 ImageData：只要 Alpha 低于阈值，强制将其 RGB 改为 [0,255,0] 且 Alpha 改为 255。对于不透明的像素强制设 Alpha=255，若恰好也是纯绿则微微偏移。最后传给 gif.js transparent: 0x00FF00 (必须是数值型)。",
+                        secretMenu: "Click avatar 3 times within 600ms to open Developer UI Rules menu. 菜单无阴影、无边框，底色 bg-gray-100"
+                    },
+                    assets: {
+                        wechat: "others/wechatpay.jpg",
+                        alipay: "others/alipay.jpg"
                     }
                 };
                 const blob = new Blob([JSON.stringify(uiRules, null, 2)], { type: "application/json" });
@@ -247,7 +256,7 @@
             const handleFiles = async (files) => {
                 const validFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
                 if (validFiles.length === 0) return;
-                setImportSource('image'); setVideoFile(null); setOriginalSpriteSheet(null); setCurrentFrame(0);
+                setImportSource('image'); setVideoFile(null); setCurrentFrame(0);
                 const newImages = await Promise.all(validFiles.map(file => {
                     return new Promise(resolve => {
                         const reader = new FileReader();
@@ -265,7 +274,7 @@
 
             const handleVideo = async (e) => {
                 const file = e.target.files[0]; if (!file) return;
-                setImportSource('video'); setVideoFile(file); setOriginalSpriteSheet(null);
+                setImportSource('video'); setVideoFile(file);
                 setIsExtracting(true); setCurrentFrame(0);
                 const video = document.createElement('video');
                 video.src = URL.createObjectURL(file); video.muted = true; video.preload = "auto";
@@ -287,78 +296,33 @@
                 };
             };
 
-            // 智能切割核心引擎：投影检测法 + 去底联动
-            const sliceSpriteSheet = useCallback((img, colsSetting, tColor, tol) => {
+            // 导入雪碧图：跳出带辅助网格的实时预览模态框
+            const handleSpriteSheet = async (e) => {
+                const file = e.target.files[0]; if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        setTempSpriteImage(img);
+                        setSpriteGrid({ rows: 1, cols: 4 });
+                        setShowSpriteModal(true);
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+                if (e.target) e.target.value = null; // 允许重复导入同一张
+            };
+
+            // 手动设定行和列，确认切割
+            const confirmSpriteSheetSlice = () => {
+                if (!tempSpriteImage) return;
                 setIsExtracting(true);
+                setShowSpriteModal(false);
                 setTimeout(() => {
-                    const canvas = document.createElement('canvas');
-                    const w = Math.round(img.width); const h = Math.round(img.height);
-                    canvas.width = w; canvas.height = h;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0);
-
-                    // 如果指定了透明色，预先干掉背景
-                    const imgData = ctx.getImageData(0, 0, w, h);
-                    const data = imgData.data;
-                    if (tColor) {
-                        const {r, g, b} = tColor;
-                        for (let i=0; i<data.length; i+=4) {
-                            if (Math.abs(data[i]-r)<=tol && Math.abs(data[i+1]-g)<=tol && Math.abs(data[i+2]-b)<=tol) {
-                                data[i+3] = 0; // 彻底透明化
-                            }
-                        }
-                        ctx.putImageData(imgData, 0, 0);
-                    }
-
-                    const isSolid = (x, y) => data[(y * w + x) * 4 + 3] > 0;
-
-                    let cols = colsSetting;
-                    let rows = 1;
-
-                    // AUTO 模式智能检测间隙
-                    if (cols === 0) { 
-                        let emptyCols = [];
-                        for (let x = 0; x < w; x++) {
-                            let empty = true;
-                            for (let y = 0; y < h; y++) { if (isSolid(x, y)) { empty = false; break; } }
-                            if (empty) emptyCols.push(x);
-                        }
-                        let emptyRows = [];
-                        for (let y = 0; y < h; y++) {
-                            let empty = true;
-                            for (let x = 0; x < w; x++) { if (isSolid(x, y)) { empty = false; break; } }
-                            if (empty) emptyRows.push(y);
-                        }
-
-                        const getSegments = (emptyArr, maxVal) => {
-                            const segments = []; let start = 0;
-                            for(let i=0; i<emptyArr.length; i++) {
-                                if(emptyArr[i] > start) segments.push({start: start, end: emptyArr[i]});
-                                start = emptyArr[i] + 1;
-                            }
-                            if(maxVal > start) segments.push({start: start, end: maxVal});
-                            return segments.filter(s => s.end - s.start > 2);
-                        };
-
-                        const xSegments = getSegments(emptyCols, w);
-                        const ySegments = getSegments(emptyRows, h);
-
-                        if (xSegments.length > 0 && ySegments.length > 0) {
-                            cols = xSegments.length;
-                            rows = ySegments.length;
-                            showToast(`✨ 智能切割完成: ${cols} 列 x ${rows} 行`);
-                        } else {
-                            cols = 4; 
-                            rows = Math.max(1, Math.round(h / (w / cols)));
-                            if (!tColor) showToast("⚠️ 未检测到透明间隙，已均分切割。请吸取并去除背景底色重试");
-                        }
-                    } else {
-                        rows = Math.max(1, Math.round(h / (w / cols)));
-                    }
-
-                    // 切片生成为独立 PNG 对象
-                    const frameW = w / cols;
-                    const frameH = h / rows;
+                    const { rows, cols } = spriteGrid;
+                    const img = tempSpriteImage;
+                    const frameW = img.width / cols;
+                    const frameH = img.height / rows;
                     const frames = [];
                     
                     for(let y=0; y<rows; y++) {
@@ -371,7 +335,7 @@
                             const fCanvas = document.createElement('canvas');
                             fCanvas.width = drawW; fCanvas.height = drawH;
                             const fCtx = fCanvas.getContext('2d');
-                            fCtx.putImageData(ctx.getImageData(startX, startY, drawW, drawH), 0, 0);
+                            fCtx.drawImage(img, startX, startY, drawW, drawH, 0, 0, drawW, drawH);
                             
                             const fImg = new Image();
                             fImg.src = fCanvas.toDataURL();
@@ -384,28 +348,12 @@
                     }
                     setImages(frames);
                     setCurrentFrame(0);
+                    setImportSource('spritesheet'); // 设定为雪碧图来源，锁定GIF导出
+                    setVideoFile(null);
+                    setTempSpriteImage(null);
                     setIsExtracting(false);
+                    showToast(`✅ 成功切割为 ${cols * rows} 帧`);
                 }, 50);
-            }, [showToast]);
-
-            useEffect(() => {
-                if (importSource === 'spritesheet' && originalSpriteSheet) {
-                    sliceSpriteSheet(originalSpriteSheet, settings.columns, transparentColor, settings.tolerance);
-                }
-            }, [originalSpriteSheet, settings.columns, transparentColor, settings.tolerance, importSource, sliceSpriteSheet]);
-
-            const handleSpriteSheet = async (e) => {
-                const file = e.target.files[0]; if (!file) return;
-                setImportSource('spritesheet'); setVideoFile(null); setCurrentFrame(0);
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        setOriginalSpriteSheet(img); 
-                    };
-                    img.src = event.target.result;
-                };
-                reader.readAsDataURL(file);
             };
 
             const onDragOver = (e) => { e.preventDefault(); setIsDragging(true); };
@@ -415,7 +363,7 @@
                 if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
                     const file = e.dataTransfer.files[0];
                     if (file.type.startsWith('video/')) {
-                        setImportSource('video'); setVideoFile(file); setOriginalSpriteSheet(null);
+                        setImportSource('video'); setVideoFile(file);
                         handleVideo({ target: { files: [file] } });
                     } else handleFiles(e.dataTransfer.files);
                 }
@@ -457,8 +405,8 @@
                 }
                 ctx.restore();
                 
-                // 非雪碧图渲染时处理透明逻辑
-                if (transparentColor && !isPickingColor && importSource !== 'spritesheet') {
+                // 实时处理透明逻辑
+                if (transparentColor && !isPickingColor) {
                     const idata = ctx.getImageData(0, 0, w, h); const d = idata.data; const {r,g,b} = transparentColor; const tol = settings.tolerance;
                     for (let i=0; i<d.length; i+=4) if (Math.abs(d[i]-r)<=tol && Math.abs(d[i+1]-g)<=tol && Math.abs(d[i+2]-b)<=tol) d[i+3]=0;
                     ctx.putImageData(idata, 0, 0);
@@ -491,94 +439,120 @@
                 return () => clearInterval(itv);
             }, [images.length, settings.fps, isPlaying]);
 
-            // 完美的导出双轨：导入雪碧图出极速无损透明GIF；否则出大尺寸PNG雪碧图
-            const handleExport = () => {
+            // 【终极重构】完美的透明单帧GIF 与 合并雪碧大图 导出逻辑
+            const handleExport = async () => {
                 if (images.length === 0) return;
-                
                 const isExportingGif = importSource === 'spritesheet';
 
                 if (isExportingGif) {
                     if (!window.GIF) { showToast("❌ GIF 引擎未就绪，请刷新重试"); return; }
                     setIsExtracting(true);
-                    showToast("⏳ 极速渲染无损透明 GIF...");
+                    showToast("⏳ 极速生成透明纯净 GIF 中...");
 
-                    const validImages = images.filter(i => i && i.img);
-                    
-                    // 【致命修复】: 保证传给 getImageData 和 gif.js 的宽高为绝对的整型！
-                    const exportW = Math.max(1, Math.round(validImages[0].width));
-                    const exportH = Math.max(1, Math.round(validImages[0].height));
-
-                    const workerBlob = new Blob([`importScripts('https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js');`], { type: 'application/javascript' });
-                    const workerUrl = URL.createObjectURL(workerBlob);
-
-                    const gif = new window.GIF({
-                        workers: 4, // 多线程极速渲染
-                        quality: 10, // 画质10渲染速度飞快，对于像素/动画已足够无损
-                        width: exportW,
-                        height: exportH,
-                        workerScript: workerUrl,
-                        transparent: 0x00FF00 // 指定极限绿幕为透明色 (必须是Hex Number)
-                    });
-
-                    const c = document.createElement('canvas');
-                    c.width = exportW;
-                    c.height = exportH;
-                    const ctx = c.getContext('2d', { willReadFrequently: true });
-
-                    validImages.forEach((imgObj) => {
-                        ctx.clearRect(0, 0, exportW, exportH);
+                    try {
+                        const validImages = images.filter(i => i && i.img);
                         
-                        // 铺满极限绿幕 #00ff00
-                        ctx.fillStyle = '#00FF00';
-                        ctx.fillRect(0, 0, exportW, exportH);
+                        // 【强制取整】防止 gif.js 底层报 Value is not of type 'long'
+                        const exportW = Math.max(1, Math.round(validImages[0].width));
+                        const exportH = Math.max(1, Math.round(validImages[0].height));
 
-                        ctx.save();
-                        ctx.filter = `saturate(${settings.saturation}%) hue-rotate(${settings.hue}deg)`;
-                        if (isMirrored) {
-                            ctx.translate(exportW, 0);
-                            ctx.scale(-1, 1);
-                        }
-                        
-                        // 绘制单帧 (原图如有透明通道，底下绿幕会透出来)
-                        ctx.drawImage(imgObj.img, 0, 0, exportW, exportH);
-                        ctx.restore();
+                        // 异步获取 worker 避免跨域
+                        const workerRes = await fetch('https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js');
+                        if (!workerRes.ok) throw new Error("Worker fetch failed");
+                        const workerText = await workerRes.text();
+                        const workerBlob = new Blob([workerText], { type: 'application/javascript' });
+                        const workerUrl = URL.createObjectURL(workerBlob);
 
-                        // 剔除防毛边/反走样的半透明噪点，硬边缘化
-                        const idata = ctx.getImageData(0, 0, exportW, exportH);
-                        const d = idata.data;
+                        const gif = new window.GIF({
+                            workers: 4,
+                            quality: 10, // 画质10即可保持速度与视觉的完美平衡
+                            width: exportW,
+                            height: exportH,
+                            workerScript: workerUrl,
+                            transparent: 0x00FF00 // 【核心修复】必须传数字类型！这就是让 gif.js 正确透明抠像的钥匙
+                        });
 
-                        for (let i = 0; i < d.length; i += 4) {
-                            let isTransparent = false;
-                            if (d[i+3] < 128) {
-                                isTransparent = true;
+                        const c = document.createElement('canvas');
+                        c.width = exportW;
+                        c.height = exportH;
+                        const ctx = c.getContext('2d', { willReadFrequently: true });
+
+                        validImages.forEach((imgObj) => {
+                            // 1. 完全清空当前帧，绝对不要预先铺绿幕底色！
+                            ctx.clearRect(0, 0, exportW, exportH);
+
+                            // 2. 绘制原图 (带有原生的透明通道)
+                            ctx.save();
+                            ctx.filter = `saturate(${settings.saturation}%) hue-rotate(${settings.hue}deg)`;
+                            if (isMirrored) {
+                                ctx.translate(exportW, 0);
+                                ctx.scale(-1, 1);
                             }
-                            
-                            if (isTransparent) {
-                                d[i] = 0; d[i+1] = 255; d[i+2] = 0; d[i+3] = 255; // 强制绿幕
-                            } else {
-                                d[i+3] = 255; // 强制全不透明，消灭毛边黑圈
+                            ctx.drawImage(imgObj.img, 0, 0, exportW, exportH);
+                            ctx.restore();
+
+                            // 3. 【防黑圈抠像算法】直接读取像素，手动制作完美的绿幕遮罩
+                            const idata = ctx.getImageData(0, 0, exportW, exportH);
+                            const d = idata.data;
+                            const tc = transparentColor;
+                            const tol = settings.tolerance;
+
+                            for (let i = 0; i < d.length; i += 4) {
+                                let isTransparent = false;
+                                
+                                // 原图里透明度过低的像素，或者是被用户吸管点掉的像素
+                                if (d[i+3] < 128) {
+                                    isTransparent = true;
+                                } else if (tc && !isPickingColor) {
+                                    if (Math.abs(d[i]-tc.r)<=tol && Math.abs(d[i+1]-tc.g)<=tol && Math.abs(d[i+2]-tc.b)<=tol) {
+                                        isTransparent = true;
+                                    }
+                                }
+
+                                if (isTransparent) {
+                                    // 给它涂上纯绿色，并强行变实（Alpha = 255）给 gif.js 引擎挖空
+                                    d[i] = 0; 
+                                    d[i+1] = 255; 
+                                    d[i+2] = 0; 
+                                    d[i+3] = 255; 
+                                } else {
+                                    // 如果像素本身是不透明的，为了防止半透明黑边，我们直接把Alpha推满
+                                    d[i+3] = 255;
+                                    // 防穿孔保护：如果原图刚好有一个完美的极限绿像素，稍微弄暗一点点
+                                    if (d[i] === 0 && d[i+1] === 255 && d[i+2] === 0) {
+                                        d[i+1] = 254; 
+                                    }
+                                }
                             }
-                        }
-                        ctx.putImageData(idata, 0, 0);
+                            ctx.putImageData(idata, 0, 0);
 
-                        gif.addFrame(c, { copy: true, delay: Math.max(10, Math.round(1000 / settings.fps)) });
-                    });
+                            gif.addFrame(c, { copy: true, delay: Math.max(10, Math.round(1000 / settings.fps)) });
+                        });
 
-                    gif.on('finished', function(blob) {
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `gbg_anim_${Date.now()}.gif`;
-                        a.click();
-                        URL.revokeObjectURL(url);
-                        URL.revokeObjectURL(workerUrl);
+                        gif.on('finished', function(blob) {
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `gbg_transparent_anim_${Date.now()}.gif`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                            URL.revokeObjectURL(workerUrl);
+                            setIsExtracting(false);
+                            showToast("✅ 无背景纯净透明 GIF 导出成功！");
+                        });
+
+                        gif.on('abort', function() {
+                            setIsExtracting(false);
+                            showToast("❌ 导出被中断");
+                        });
+
+                        gif.render();
+                    } catch (error) {
+                        console.error(error);
                         setIsExtracting(false);
-                        showToast("✅ 无损 GIF 导出成功！");
-                    });
-
-                    gif.render();
+                        showToast("❌ GIF 引擎加载失败，请检查网络");
+                    }
                 } else {
-                    // 非雪碧图来源，强制导出 PNG 大图
                     const tmp = document.createElement('canvas');
                     const mw = Math.max(...images.map(i => i.width)); const mh = Math.max(...images.map(i => i.height));
                     let cols = settings.columns > 0 ? settings.columns : Math.ceil(Math.sqrt(images.length));
@@ -588,7 +562,7 @@
                     tmp.width = w; tmp.height = h;
                     drawCore(tmp.getContext('2d'), w, h, true);
                     const a = document.createElement('a'); a.download=`sprite_sheet_${Date.now()}.png`; a.href=tmp.toDataURL('image/png'); a.click();
-                    showToast("✅ 完美雪碧图导出成功！");
+                    showToast("✅ 完美 PNG 雪碧大图导出成功！");
                 }
             };
 
@@ -638,12 +612,66 @@
                     <input type="file" ref={spriteSheetInputRef} onChange={handleSpriteSheet} accept="image/*" className="hidden" />
                     <input type="file" ref={uiRuleInputRef} onChange={handleUploadUIRules} accept=".json" className="hidden" />
 
+                    {/* 全局 Toast 提示 - 绝对无阴影无边框 */}
                     {toastMessage && (
                         <div className="fixed top-10 left-1/2 -translate-x-1/2 z-[200] bg-gray-900 text-white px-8 py-4 rounded-full animate-pop-in flex items-center gap-3">
                             <span className="text-[12px] font-black tracking-widest">{toastMessage}</span>
                         </div>
                     )}
 
+                    {/* 雪碧图切割实时网格预览模态框 */}
+                    {showSpriteModal && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={()=>setShowSpriteModal(false)}>
+                            <div className="bg-white p-8 max-w-3xl w-full relative flex flex-col items-center animate-pop-in rounded-[32px]" onClick={e=>e.stopPropagation()}>
+                                <button onClick={()=>setShowSpriteModal(false)} className="absolute top-6 right-6 text-gray-400 hover:text-gray-900 p-2 transition-all"><Icons.Close size={24}/></button>
+                                <h2 className="text-2xl font-black mb-2 tracking-tight text-center text-gray-900">对齐雪碧图网格</h2>
+                                <p className="text-[10px] font-bold text-gray-400 mb-6 tracking-widest uppercase text-center">拖动数值观察绿色切割线，直到完美包裹每一帧</p>
+                                
+                                {/* 实时切割网格预览区：使用 aspectRatio 完美贴合图片边缘 */}
+                                {tempSpriteImage && (
+                                    <div className="relative w-full h-[40vh] mb-8 flex items-center justify-center bg-gray-50 rounded-[24px] overflow-hidden checkered-bg p-4">
+                                        <div className="relative max-w-full max-h-full flex" style={{ aspectRatio: `${tempSpriteImage.width}/${tempSpriteImage.height}` }}>
+                                            <img src={tempSpriteImage.src} className="w-full h-full object-contain block pointer-events-none" alt="preview" />
+                                            {/* 覆盖在图片上的高亮网格线 */}
+                                            <div className="absolute inset-0 pointer-events-none">
+                                                {Array.from({ length: Math.max(0, spriteGrid.cols - 1) }).map((_, i) => (
+                                                    <div key={`v-${i}`} className="absolute top-0 bottom-0 border-l-[2px] border-[#00ff00]" style={{ left: `${((i + 1) / spriteGrid.cols) * 100}%`, transform: 'translateX(-1px)' }} />
+                                                ))}
+                                                {Array.from({ length: Math.max(0, spriteGrid.rows - 1) }).map((_, i) => (
+                                                    <div key={`h-${i}`} className="absolute left-0 right-0 border-t-[2px] border-[#00ff00]" style={{ top: `${((i + 1) / spriteGrid.rows) * 100}%`, transform: 'translateY(-1px)' }} />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="flex w-full gap-6 mb-8">
+                                    <div className="flex-1 flex flex-col gap-3">
+                                        <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest text-center">横向列数 (Cols)</label>
+                                        <div className="flex items-center gap-3">
+                                            <button onClick={() => setSpriteGrid(p => ({...p, cols: Math.max(1, p.cols - 1)}))} className="w-12 h-12 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-[16px] font-black text-xl text-gray-600 transition-all border-none">-</button>
+                                            <input type="number" min="1" value={spriteGrid.cols} onChange={(e) => setSpriteGrid(p => ({...p, cols: Math.max(1, parseInt(e.target.value)||1)}))} className="flex-1 bg-gray-50 border-none rounded-[16px] h-12 text-center font-black text-xl text-gray-900 outline-none" />
+                                            <button onClick={() => setSpriteGrid(p => ({...p, cols: p.cols + 1}))} className="w-12 h-12 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-[16px] font-black text-xl text-gray-600 transition-all border-none">+</button>
+                                        </div>
+                                    </div>
+                                    <div className="flex-1 flex flex-col gap-3">
+                                        <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest text-center">纵向行数 (Rows)</label>
+                                        <div className="flex items-center gap-3">
+                                            <button onClick={() => setSpriteGrid(p => ({...p, rows: Math.max(1, p.rows - 1)}))} className="w-12 h-12 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-[16px] font-black text-xl text-gray-600 transition-all border-none">-</button>
+                                            <input type="number" min="1" value={spriteGrid.rows} onChange={(e) => setSpriteGrid(p => ({...p, rows: Math.max(1, parseInt(e.target.value)||1)}))} className="flex-1 bg-gray-50 border-none rounded-[16px] h-12 text-center font-black text-xl text-gray-900 outline-none" />
+                                            <button onClick={() => setSpriteGrid(p => ({...p, rows: p.rows + 1}))} className="w-12 h-12 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-[16px] font-black text-xl text-gray-600 transition-all border-none">+</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex w-full gap-3">
+                                    <button onClick={() => setShowSpriteModal(false)} className="flex-1 py-4 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-full font-black text-[12px] tracking-widest uppercase transition-all border-none">取消</button>
+                                    <button onClick={confirmSpriteSheetSlice} className="flex-1 py-4 bg-gray-900 hover:bg-black text-white rounded-full font-black text-[12px] tracking-widest uppercase transition-all border-none">确认切割并导入</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 捐赠模态框 */}
                     {showDonationModal && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={()=>setShowDonationModal(false)}>
                             <div className="bg-white p-10 max-w-2xl w-full relative flex flex-col items-center animate-pop-in rounded-[32px]" onClick={e=>e.stopPropagation()}>
@@ -665,7 +693,7 @@
                     )}
 
                     <div className="w-[95vw] max-w-[1400px] flex flex-col gap-4 h-full max-h-[900px] animate-pop-in">
-                        <header className="bg-white py-3 px-6 rounded-full flex items-center justify-between z-20 shrink-0">
+                        <header className="bg-white py-3 px-6 rounded-full flex items-center justify-between z-20 shrink-0 border-none">
                             <div className="flex items-center gap-5 text-left">
                                 <div className="relative">
                                     <img src="others/xieyoujune.jpg" alt="Avatar" className="w-11 h-11 object-cover rounded-full cursor-pointer hover:scale-105 transition-transform" onError={e=>e.target.src=DefaultAvatar} onClick={handleAvatarClick} />
@@ -673,8 +701,8 @@
                                         <>
                                             <div className="fixed inset-0 z-40" onClick={() => setShowUIMenu(false)}></div>
                                             <div className="absolute top-[56px] left-0 w-[170px] bg-gray-100 p-2 z-50 animate-pop-in flex flex-col gap-1 rounded-[24px]">
-                                                <button onClick={() => uiRuleInputRef.current?.click()} className="flex items-center gap-3 px-4 py-3 text-[11px] font-black text-gray-500 hover:text-gray-900 hover:bg-white rounded-[18px] transition-all w-full text-left uppercase tracking-widest"><Icons.Upload size={14} /> 导入规则</button>
-                                                <button onClick={handleDownloadUIRules} className="flex items-center gap-3 px-4 py-3 text-[11px] font-black text-gray-500 hover:text-gray-900 hover:bg-white rounded-[18px] transition-all w-full text-left uppercase tracking-widest"><Icons.Download size={14} /> 导出规则</button>
+                                                <button onClick={() => uiRuleInputRef.current?.click()} className="flex items-center gap-3 px-4 py-3 text-[11px] font-black text-gray-500 hover:text-gray-900 hover:bg-white rounded-[18px] transition-all w-full text-left uppercase tracking-widest border-none"><Icons.Upload size={14} /> 导入规则</button>
+                                                <button onClick={handleDownloadUIRules} className="flex items-center gap-3 px-4 py-3 text-[11px] font-black text-gray-500 hover:text-gray-900 hover:bg-white rounded-[18px] transition-all w-full text-left uppercase tracking-widest border-none"><Icons.Download size={14} /> 导出规则</button>
                                             </div>
                                         </>
                                     )}
@@ -694,30 +722,30 @@
                                 </div>
                             </div>
                             <div className="flex gap-2">
-                                <button onClick={()=>fileInputRef.current.click()} className="px-7 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-black uppercase tracking-widest rounded-full transition-all">上传</button>
-                                <button onClick={handleExport} disabled={images.length===0 || isExtracting} className={`px-7 py-2.5 ${isExtracting ? 'bg-gray-400 cursor-wait' : 'bg-[#b0b3b8] hover:bg-gray-500'} text-white text-sm font-black uppercase tracking-widest rounded-full transition-all active:scale-95 disabled:opacity-30`}>
+                                <button onClick={()=>fileInputRef.current.click()} className="px-7 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-black uppercase tracking-widest rounded-full transition-all border-none">上传</button>
+                                <button onClick={handleExport} disabled={images.length===0 || isExtracting} className={`px-7 py-2.5 ${isExtracting ? 'bg-gray-400 cursor-wait' : 'bg-[#b0b3b8] hover:bg-gray-500'} text-white text-sm font-black uppercase tracking-widest rounded-full transition-all active:scale-95 disabled:opacity-30 border-none`}>
                                     {isExtracting ? '处理中...' : (isExportingGifBtn ? '导出透明 GIF' : '导出合并大图')}
                                 </button>
-                                <button onClick={()=>setShowDonationModal(true)} className="px-4 py-2.5 bg-gray-100 text-gray-800 rounded-full btn-coffee-lab transition-all"><Icons.Coffee /></button>
+                                <button onClick={()=>setShowDonationModal(true)} className="px-4 py-2.5 bg-gray-100 text-gray-800 rounded-full btn-coffee-lab transition-all border-none"><Icons.Coffee /></button>
                             </div>
                         </header>
 
                         <main className="flex gap-4 flex-1 min-h-0">
-                            <aside className="w-[320px] bg-white p-4 rounded-[28px] flex flex-col gap-3 overflow-hidden shrink-0">
-                                <div className="flex bg-gray-50 p-1.5 rounded-full shrink-0">
-                                    <button onClick={()=>setPreviewMode('anim')} className={`flex-1 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-full transition-all ${previewMode==='anim'?'bg-white text-gray-900 shadow-none':'text-gray-400 hover:text-gray-600'}`}>动画 / Anim</button>
-                                    <button onClick={()=>setPreviewMode('sheet')} className={`flex-1 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-full transition-all ${previewMode==='sheet'?'bg-white text-gray-900 shadow-none':'text-gray-400 hover:text-gray-600'}`}>大图 / Sheet</button>
+                            <aside className="w-[320px] bg-white p-4 rounded-[28px] flex flex-col gap-3 overflow-hidden shrink-0 border-none">
+                                <div className="flex bg-gray-50 p-1.5 rounded-full shrink-0 border-none">
+                                    <button onClick={()=>setPreviewMode('anim')} className={`flex-1 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-full transition-all border-none ${previewMode==='anim'?'bg-white text-gray-900':'text-gray-400 hover:text-gray-600'}`}>动画 / Anim</button>
+                                    <button onClick={()=>setPreviewMode('sheet')} className={`flex-1 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-full transition-all border-none ${previewMode==='sheet'?'bg-white text-gray-900':'text-gray-400 hover:text-gray-600'}`}>大图 / Sheet</button>
                                 </div>
-                                <div className={`bg-gray-50 p-5 rounded-[24px] flex flex-col items-center justify-center cursor-pointer transition-all shrink-0 ${isDragging?'bg-gray-200 scale-[1.02]':'hover:bg-gray-100'}`} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop} onClick={()=>fileInputRef.current.click()}>
+                                <div className={`bg-gray-50 p-5 rounded-[24px] flex flex-col items-center justify-center cursor-pointer transition-all shrink-0 border-none ${isDragging?'bg-gray-200 scale-[1.02]':'hover:bg-gray-100'}`} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop} onClick={()=>fileInputRef.current.click()}>
                                     <Icons.Upload size={20} className="text-gray-700" /><p className="text-[11px] font-black mt-2 text-gray-700 tracking-wide uppercase text-center">上传单图序列</p>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2 shrink-0">
-                                    <button onClick={()=>videoInputRef.current?.click()} className="bg-gray-50 hover:bg-gray-100 py-3 rounded-[24px] flex flex-col items-center justify-center gap-1 text-[9px] font-black uppercase tracking-widest transition-all text-gray-600"><Icons.Video size={16} /> 导入视频</button>
-                                    <button onClick={()=>spriteSheetInputRef.current?.click()} className="bg-gray-50 hover:bg-gray-100 py-3 rounded-[24px] flex flex-col items-center justify-center gap-1 text-[9px] font-black uppercase tracking-widest transition-all text-gray-600"><Icons.Grid size={16} /> 导入雪碧图</button>
+                                    <button onClick={()=>videoInputRef.current?.click()} className="bg-gray-50 hover:bg-gray-100 py-3 rounded-[24px] flex flex-col items-center justify-center gap-1 text-[9px] font-black uppercase tracking-widest transition-all text-gray-600 border-none"><Icons.Video size={16} /> 导入视频</button>
+                                    <button onClick={()=>spriteSheetInputRef.current?.click()} className="bg-gray-50 hover:bg-gray-100 py-3 rounded-[24px] flex flex-col items-center justify-center gap-1 text-[9px] font-black uppercase tracking-widest transition-all text-gray-600 border-none"><Icons.Grid size={16} /> 导入雪碧图</button>
                                 </div>
-                                <div className="flex-1 bg-gray-50 p-5 rounded-[24px] overflow-y-auto no-scrollbar flex flex-col text-left gap-5">
+                                <div className="flex-1 bg-gray-50 p-5 rounded-[24px] overflow-y-auto no-scrollbar flex flex-col text-left gap-5 border-none">
                                     <div className="flex flex-col gap-4">
-                                        <Slider label="智能分割列数" value={settings.columns} min={0} max={Math.max(20,images.length)} onChange={v=>setSettings({...settings, columns:v})} />
+                                        <Slider label="展示/排列列数" value={settings.columns} min={0} max={Math.max(20,images.length)} onChange={v=>setSettings({...settings, columns:v})} />
                                         <Slider label="切片间距 / Padding" value={settings.padding} min={0} max={50} onChange={v=>setSettings({...settings, padding:v})} suffix="PX" />
                                         <Slider label="播放速度 / FPS" value={settings.fps} min={1} max={60} onChange={v=>setSettings({...settings, fps:v})} suffix="FPS" />
                                         <Slider label="饱和度 / Saturation" value={settings.saturation} min={0} max={200} onChange={v=>setSettings({...settings, saturation:v})} suffix="%" />
@@ -725,24 +753,24 @@
                                     </div>
                                     {videoFile && (
                                         <div className="flex flex-col gap-2 pt-2 shrink-0 border-t border-gray-200/50">
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">视频提取时间</p>
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-left">视频提取时间</p>
                                             <div className="flex bg-gray-200/50 p-1 rounded-full gap-1">
                                                 {[1,5,10].map(v=>(
-                                                    <button key={v} onClick={()=>handleDurationChange(v)} disabled={isExtracting} className={`flex-1 py-2 text-[10px] font-black rounded-full transition-all ${videoDurationSetting===v?'bg-white text-gray-900 shadow-none':'text-gray-500 hover:text-gray-100'}`}>{v}S</button>
+                                                    <button key={v} onClick={()=>handleDurationChange(v)} disabled={isExtracting} className={`flex-1 py-2 text-[10px] font-black rounded-full transition-all border-none ${videoDurationSetting===v?'bg-white text-gray-900':'text-gray-500 hover:text-gray-100'}`}>{v}S</button>
                                                 ))}
                                             </div>
                                         </div>
                                     )}
                                     <div className="pt-2 flex flex-col gap-3 border-t-0 text-left shrink-0">
-                                        <div className="flex justify-between items-center"><p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">透明抠图 / Transparency</p>{transparentColor && <button onClick={()=>setTransparentColor(null)} className="text-[10px] font-black text-red-500 uppercase hover:underline">清除</button>}</div>
-                                        <button onClick={()=>setIsPickingColor(!isPickingColor)} className={`w-full py-2.5 rounded-full text-[11px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${shouldShakePickBtn?'animate-shake bg-red-400 text-white':(isPickingColor?'bg-gray-900 text-white':'bg-gray-200/60 text-gray-700 hover:bg-gray-200')}`}><Icons.Pipette size={16}/>{isPickingColor?'请在中间画板取色':'吸取背景色'}</button>
+                                        <div className="flex justify-between items-center"><p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">透明抠图 / Transparency</p>{transparentColor && <button onClick={()=>setTransparentColor(null)} className="text-[10px] font-black text-red-500 uppercase hover:underline border-none">清除</button>}</div>
+                                        <button onClick={()=>setIsPickingColor(!isPickingColor)} className={`w-full py-2.5 rounded-full text-[11px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 border-none ${shouldShakePickBtn?'animate-shake bg-red-400 text-white':(isPickingColor?'bg-gray-900 text-white':'bg-white text-gray-700 hover:bg-gray-50')}`}><Icons.Pipette size={14}/>{isPickingColor?'请在中间画板取色':'吸取背景色'}</button>
                                         <Slider label="调节容差 / Tolerance" value={settings.tolerance} min={0} max={150} onChange={handleToleranceChange} />
                                     </div>
                                 </div>
                             </aside>
 
-                            <div className="flex-1 bg-white rounded-[28px] relative flex flex-col overflow-hidden">
-                                <div className="h-12 flex items-center px-6 shrink-0 bg-white">
+                            <div className="flex-1 bg-white rounded-[28px] relative flex flex-col overflow-hidden border-none">
+                                <div className="h-12 flex items-center px-6 shrink-0 bg-white border-b border-gray-50">
                                     <div className="flex items-center gap-3 text-left">
                                         <div className={`w-1.5 h-1.5 rounded-full ${images.length===0?'bg-gray-200':(isPickingColor?'bg-yellow-400 animate-pulse':'bg-red-500 animate-fast-blink')}`} />
                                         <span className="text-[11px] text-gray-400 font-black uppercase tracking-[0.2em] leading-none mt-0.5">显示输出 / Live Output</span>
@@ -750,38 +778,38 @@
                                     {importSource === 'spritesheet' && <span className="ml-4 text-[9px] bg-gray-900 text-white px-2 py-0.5 rounded-full font-black uppercase">导出格式锁：无损 GIF</span>}
                                 </div>
                                 <div className="flex-1 checkered-bg overflow-auto p-8 flex items-center justify-center relative">
-                                    {isExtracting && <div className="absolute inset-0 bg-white/70 backdrop-blur-md flex flex-col items-center justify-center z-50"><div className="w-8 h-8 border-4 border-gray-100 border-t-gray-900 rounded-full animate-spin mb-4" /><p className="text-[11px] font-black tracking-widest text-gray-900 uppercase animate-pulse">处理中...</p></div>}
+                                    {isExtracting && <div className="absolute inset-0 bg-white/70 backdrop-blur-md flex flex-col items-center justify-center z-50"><div className="w-8 h-8 border-[3px] border-gray-100 border-t-gray-900 rounded-full animate-spin mb-4" /><p className="text-[11px] font-black tracking-widest text-gray-900 uppercase animate-pulse">处理中...</p></div>}
                                     {images.length===0 ? (
                                         <div onClick={()=>fileInputRef.current.click()} className="cursor-pointer group flex flex-col items-center opacity-40 hover:opacity-100 transition-opacity"><p className="text-3xl font-black text-gray-200 tracking-tight text-center leading-none uppercase">Empty</p></div>
                                     ) : (
                                         <canvas ref={canvasRef} onClick={handleCanvasClick} className={`max-w-full max-h-full object-contain transition-all duration-300 ${isPickingColor?'picker-cursor scale-[1.02]':''}`} />
                                     )}
                                 </div>
-                                <footer className="h-16 relative flex items-center justify-between px-6 bg-white opacity-90 shrink-0">
-                                    <div className="flex flex-col text-left flex-1"><span className="text-[9px] font-black uppercase text-gray-400 tracking-widest leading-none">系统状态 / Status</span><span className="text-[11px] font-black tracking-wider text-gray-600 leading-none mt-1 uppercase">Signal: Nominal</span></div>
-                                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-1 bg-gray-50 px-4 py-1.5 rounded-full pointer-events-auto">
-                                        <button className={`btn-status-icon ${isPlaying ? 'active' : ''}`} onClick={() => setIsPlaying(true)} title="播放"><Icons.Play size={18} /></button>
-                                        <button className={`btn-status-icon ${!isPlaying ? 'active' : ''}`} onClick={() => setIsPlaying(false)} title="暂停"><Icons.Pause size={18} /></button>
+                                <footer className="h-16 relative flex items-center justify-between px-6 bg-white opacity-90 shrink-0 border-t border-gray-50">
+                                    <div className="flex flex-col text-left flex-1"><span className="text-[9px] font-black uppercase text-gray-400 tracking-widest leading-none">系统状态 / Status</span><span className="text-[11px] font-black tracking-wider text-gray-600 leading-none mt-1 uppercase">{isExtracting ? 'Processing...' : 'Signal: Nominal'}</span></div>
+                                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-1 bg-gray-50 px-4 py-1.5 rounded-full pointer-events-auto border-none">
+                                        <button className={`btn-status-icon border-none ${isPlaying ? 'active' : ''}`} onClick={() => setIsPlaying(true)} title="播放"><Icons.Play size={18} /></button>
+                                        <button className={`btn-status-icon border-none ${!isPlaying ? 'active' : ''}`} onClick={() => setIsPlaying(false)} title="暂停"><Icons.Pause size={18} /></button>
                                         <div className="w-px h-5 bg-gray-200 mx-2" />
-                                        <button className={`btn-status-icon ${isMirrored ? 'active' : ''}`} onClick={() => setIsMirrored(!isMirrored)} title="镜像翻转"><Icons.Mirror size={20} /></button>
+                                        <button className={`btn-status-icon border-none ${isMirrored ? 'active' : ''}`} onClick={() => setIsMirrored(!isMirrored)} title="镜像翻转"><Icons.Mirror size={20} /></button>
                                     </div>
                                     <div className="text-right flex flex-col text-right flex-1 items-end"><span className="text-[9px] font-black uppercase text-gray-400 tracking-widest leading-none">信息 / Info</span><span className="text-[11px] font-mono font-black uppercase text-gray-600 leading-none mt-1">{previewMode==='anim' ? `F:${currentFrame+1}/${images.length}` : `W:${canvasSize.width} H:${canvasSize.height}`}</span></div>
                                 </footer>
                             </div>
 
-                            <aside className="w-[320px] bg-white p-4 rounded-[28px] flex flex-col overflow-hidden shrink-0">
-                                <div className="bg-gray-50 rounded-[24px] p-5 flex-1 flex flex-col overflow-hidden text-left">
+                            <aside className="w-[320px] bg-white p-4 rounded-[28px] flex flex-col overflow-hidden shrink-0 border-none">
+                                <div className="bg-gray-50 rounded-[24px] p-5 flex-1 flex flex-col overflow-hidden text-left border-none">
                                     <div className="flex justify-between items-center mb-5 text-left">
                                         <p className="text-[13px] font-black text-gray-400 uppercase tracking-widest leading-none">帧序列 / Sequence ({images.length})</p>
-                                        {images.length>0 && <button onClick={clearAll} className="text-[13px] font-black text-red-500 hover:text-red-700 transition-colors uppercase">清空</button>}
+                                        {images.length>0 && <button onClick={clearAll} className="text-[13px] font-black text-red-500 hover:text-red-700 transition-colors uppercase border-none bg-transparent">清空</button>}
                                     </div>
                                     <div className="flex-1 overflow-y-auto custom-scrollbar -mx-2 px-2 space-y-3 text-left">
                                         {images.length===0 ? <div className="text-center text-gray-300 text-[12px] font-black uppercase mt-12 py-8 rounded-[24px] bg-gray-100/50">EMPTY LIST</div> : images.map((img, idx)=>(
-                                            <div key={img.id} className={`flex items-center gap-3 p-3 rounded-[20px] transition-all duration-200 ${currentFrame===idx&&previewMode==='anim'?'bg-gray-200':'bg-white hover:bg-gray-100'}`}>
-                                                <div className="w-14 h-14 bg-gray-100 rounded-[16px] flex items-center justify-center overflow-hidden shrink-0"><img src={img.url} className="max-w-full max-h-full object-contain" alt="thumb" /></div>
+                                            <div key={img.id} className={`flex items-center gap-3 p-3 rounded-[20px] transition-all duration-200 border-none ${currentFrame===idx&&previewMode==='anim'?'bg-gray-200':'bg-white hover:bg-gray-50'}`}>
+                                                <div className="w-14 h-14 bg-gray-100 rounded-[16px] flex items-center justify-center overflow-hidden shrink-0 border-none"><img src={img.url} className="max-w-full max-h-full object-contain" alt="thumb" /></div>
                                                 <div className="flex-1 min-w-0 flex flex-col justify-center"><p className="text-[13px] font-black text-gray-900 truncate leading-tight mb-1" title={img.name}>{img.name}</p><p className="text-[11px] font-black text-gray-400 font-mono uppercase leading-tight">{img.width}x{img.height}</p></div>
                                                 <div className="flex items-center gap-2 shrink-0">
-                                                    <div className="flex flex-col gap-1"><button onClick={()=>moveImage(idx,'up')} disabled={idx===0} className="text-gray-300 hover:text-gray-900 disabled:opacity-20 transition-colors"><Icons.ChevronUp size={14} /></button><button onClick={()=>moveImage(idx,'down')} disabled={idx===images.length-1} className="text-gray-300 hover:text-gray-900 disabled:opacity-20 transition-colors"><Icons.ChevronDown size={14} /></button></div>
+                                                    <div className="flex flex-col gap-1"><button onClick={()=>moveImage(idx,'up')} disabled={idx===0} className="text-gray-300 hover:text-gray-900 disabled:opacity-20 transition-colors border-none bg-transparent"><Icons.ChevronUp size={14} /></button><button onClick={()=>moveImage(idx,'down')} disabled={idx===images.length-1} className="text-gray-300 hover:text-gray-900 disabled:opacity-20 transition-colors border-none bg-transparent"><Icons.ChevronDown size={14} /></button></div>
                                                     <button onClick={()=>removeImage(img.id)} className="w-10 h-10 flex items-center justify-center bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 rounded-[12px] transition-all ml-1 border-none"><Icons.Trash size={16} /></button>
                                                 </div>
                                             </div>
